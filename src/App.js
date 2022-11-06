@@ -32,6 +32,7 @@ import { useEffect, useState, useRef, u } from 'react';
  */
 
 
+ const SPEED = 2;
 
 
 class Entity {
@@ -58,8 +59,8 @@ class Neighbour {
 class Node {
   neighbours;
   data;
-  constructor(x,y) {
-    this.coords = [x,y];
+  constructor(x, y) {
+    this.coords = [x, y];
     this.neighbours = new Array();
   }
 
@@ -70,8 +71,8 @@ class Node {
     return removed;
   }
 
-  addNeighbour(indexPosition,x, y, cost) {
-    this.neighbours.push([indexPosition,cost,x, y]);
+  addNeighbour(indexPosition, x, y, cost) {
+    this.neighbours.push([indexPosition, cost, x, y]);
   }
 
 }
@@ -88,7 +89,7 @@ function createGrid(heightInCells, widthInCells) {
     let x = 0;
 
     while (x < widthInCells) {
-      grid.push(new Node(x,y));
+      grid.push(new Node(x, y));
       x++
     }
     y++
@@ -105,13 +106,13 @@ function createGrid(heightInCells, widthInCells) {
  */
 async function generateNeighbours(grid) {
   console.assert(grid.length, "grid is empty");
-  for(let i = 0;i < grid.length; i++){
-    const neighbours = [ [0, -1], [-1, 0], [1, 0],  [0, 1]];
+  for (let i = 0; i < grid.length; i++) {
+    const neighbours = [[0, -1], [-1, 0], [1, 0], [0, 1]];
     neighbours.forEach(neigh => {
       let xVal = grid[i].coords[0] + neigh[0];
       let yVal = grid[i].coords[1] + neigh[1];
-      if (grid.findIndex(node => isSameCoords(node.coords,[xVal,yVal])) > -1) {
-        const neighbourIndex = grid.findIndex(node => isSameCoords(node.coords,[xVal,yVal]));
+      if (grid.findIndex(node => isSameCoords(node.coords, [xVal, yVal])) > -1) {
+        const neighbourIndex = grid.findIndex(node => isSameCoords(node.coords, [xVal, yVal]));
         grid[i].addNeighbour(neighbourIndex, xVal, yVal, 1);
       }
     })
@@ -132,8 +133,8 @@ function renderGraph(canvasContext, grid) {
   const spacing = 10
   canvasContext.fillStyle = "white"
   canvasContext.fillStroke = "black"
-  for(let i = 0; i < grid.length;i++){
-    renderNode(canvasContext,grid[i].coords[0],grid[i].coords[1]);
+  for (let i = 0; i < grid.length; i++) {
+    renderNode(canvasContext, grid[i].coords[0], grid[i].coords[1]);
   }
 }
 /**
@@ -142,31 +143,32 @@ function renderGraph(canvasContext, grid) {
  * @param {Node} node 
  * @param {string} color 
  */
-function renderNode(canvasContext, x, y,text) {
+function renderNode(canvasContext, x, y, text) {
   canvasContext.fillRect(20 + x * 16, 20 + y * 16, 15, 15);
   canvasContext.stroke();
-  if(text){ 
+  if (text) {
     canvasContext.fillStyle = "white";
     canvasContext.font = "10px Comic Sans MS";
-    canvasContext.fillText(text,20 + x * 16 + 2, 20 + y * 16 + 10,12);
+    canvasContext.fillText(text, 20 + x * 16 + 2, 20 + y * 16 + 10, 12);
     canvasContext.stroke();
- }
+  }
 
 }
 
-async function renderVisited(canvasContext,x,y,cost){
+async function renderVisited(canvasContext, x, y, cost) {
   canvasContext.fillStyle = "green";
-  renderNode(canvasContext,x,y,cost);
+  renderNode(canvasContext, x, y, cost);
 }
 
-function renderExplored(canvasContext,x,y){
+function renderExplored(canvasContext, x, y) {
   canvasContext.fillStyle = "blue";
-  renderNode(canvasContext,x,y);
+  renderNode(canvasContext, x, y);
 }
 
-function renderPathNode(canvasContext,x,y){
+function renderPathNode(canvasContext, x, y) {
+  console.assert(canvasContext,"no context");
   canvasContext.fillStyle = "yellow";
-  renderNode(canvasContext,x,y);
+  renderNode(canvasContext, x, y);
 }
 
 class KnowledgeRow {
@@ -278,56 +280,77 @@ async function dijkstraNavigation(grid, visitor, canvasContext) {
  * @param {number[]} startPos
  * 
  */
-async function dijkstraNavigation2(grid,visitor,startPos,canvasContext){
+async function dijkstraNavigation2(grid, visitor, startPos, canvasContext) {
   const unvisitedList = new Array();
   const distanceFromStart = new Array();
-  for(let i=0;i < grid.length;i++){
+  for (let i = 0; i < grid.length; i++) {
     unvisitedList.push(true);
-    distanceFromStart.push([i,Number.POSITIVE_INFINITY]);
+    distanceFromStart.push([i, Number.POSITIVE_INFINITY]);
   }
   // step 2 set origin as current
-  const currentNodeIndex = grid.findIndex(node => isSameCoords(node.coords,startPos));
-  const destinationIndex = grid.findIndex(node => isSameCoords(node.coords,visitor.destination));
-  console.assert(currentNodeIndex > -1,"no such starting point exists");
-  distanceFromStart[currentNodeIndex] = [currentNodeIndex,0];
-  visitNeighbours(currentNodeIndex,grid,distanceFromStart,canvasContext);
+  const currentNodeIndex = grid.findIndex(node => isSameCoords(node.coords, startPos));
+  const destinationIndex = grid.findIndex(node => isSameCoords(node.coords, visitor.destination));
+  console.assert(currentNodeIndex > -1, "no such starting point exists");
+  distanceFromStart[currentNodeIndex] = [currentNodeIndex, 0];
+  visitNeighbours(currentNodeIndex, grid, distanceFromStart, canvasContext);
   unvisitedList[currentNodeIndex] = false;
-  
-  while(unvisitedList[destinationIndex] === false || !unvisitedList.every(node => node === false)){
-    distanceFromStart.sort((a,b)=> { if( a[1] < b[1]){return -1} return +1});
-   const unvisitedIndex = getShortestDistanceUnvisited(unvisitedList,distanceFromStart,grid);
-   console.assert(unvisitedIndex,"no more nodes to visit");
-   if(!unvisitedIndex){
-    break;
-   }
-   visitNeighbours(unvisitedIndex,grid,distanceFromStart,canvasContext);
-   unvisitedList[unvisitedIndex] = false;
-   renderVisited(canvasContext, grid[unvisitedIndex].coords[0],grid[unvisitedIndex].coords[1],distanceFromStart.find(d => d[0] === unvisitedIndex)[1]);
+  let visits = 0;
+  while (unvisitedList[destinationIndex] === false || !unvisitedList.every(node => node === false)) {
+      distanceFromStart.sort((a, b) => { if (a[1] < b[1]) { return -1 } return +1 });
+      const unvisitedIndex = getShortestDistanceUnvisited(unvisitedList, distanceFromStart, grid);
+      console.assert(unvisitedIndex, "no more nodes to visit");
+      if (!unvisitedIndex) {
+        break;
+      }
+      visitNeighbours(unvisitedIndex, grid, distanceFromStart, canvasContext);
+      unvisitedList[unvisitedIndex] = false;
+      setTimeout(()=>{
+        renderVisited(canvasContext, grid[unvisitedIndex].coords[0], grid[unvisitedIndex].coords[1], distanceFromStart.find(d => d[0] === unvisitedIndex)[1]);
+        renderEntities(canvasContext,visitor);
+      },visits * SPEED)
+      visits ++;
+   
    
   }
-  renderEntities(canvasContext,[visitor]);
+  visits ++;
+  setTimeout(()=>{
+    renderEntities(canvasContext, [visitor]);
+  },visits * SPEED)
+
 
   const destNode = distanceFromStart.find(node => node[0] === destinationIndex);
-  console.assert(destNode,"no destination node in distanceList");
+  console.assert(destNode, "no destination node in distanceList");
   let cursor = [...destNode];
   const path = new Array();
-  while(cursor[1] !== 0){
-    renderPathNode(canvasContext,grid[cursor[0]].coords[0],grid[cursor[0]].coords[1])
-   let nextCursorPosition =   getClosestToStart(grid[cursor[0]].neighbours,distanceFromStart);
-   console.assert(nextCursorPosition,"no neighbours");
-   cursor[0] = nextCursorPosition;
-   cursor[1] = distanceFromStart.find( node => node[0] === nextCursorPosition)[1];
-   path.push([...cursor]); 
+  while (cursor[1] !== 0) {
+    
+   
+    let nextCursorPosition = getClosestToStart(grid[cursor[0]].neighbours, distanceFromStart);
+    console.assert(nextCursorPosition, "no neighbours");
+    cursor[0] = nextCursorPosition;
+    cursor[1] = distanceFromStart.find(node => node[0] === nextCursorPosition)[1];
+    path.push([...cursor]);
   }
 
+  path.reverse();
+  setTimeout(()=>{
+  path.forEach( cursor => {
+    const xPos = grid[cursor[0]].coords[0];
+    const yPos = grid[cursor[0]].coords[1];
+      renderPathNode(canvasContext, xPos, yPos)
+   
+  });
+  renderEntities(canvasContext,visitor);
+}, 7000);
+
   console.log("finished running dijskra!");
-  console.log("origin, destination",startPos,visitor.destination);
+  console.log("origin, destination", startPos, visitor.destination);
   console.log(" shortest path", path);
 
 }
 
-function isSameCoords(a,b){
-  if(a[0] === b[0] && a[1] === b[1]){
+function isSameCoords(a, b) {
+  if (a[0] === b[0] && a[1] === b[1]) {
     return true;
   }
   return false;
@@ -338,14 +361,14 @@ function isSameCoords(a,b){
  * @param {any[]} neighbours 
  * @param {[][]} distanceFromStartList
  */
-function getClosestToStart(neighbours,distanceFromStartList){
+function getClosestToStart(neighbours, distanceFromStartList) {
   let min = Number.POSITIVE_INFINITY;
   let minIndex = -1;
-  for(let i = 0; i < neighbours.length; i++){
+  for (let i = 0; i < neighbours.length; i++) {
     let currentNeighb = neighbours[i][0];
     let currentNeighbDistance = distanceFromStartList.find(node => node[0] === currentNeighb)[1];
-    console.assert(currentNeighbDistance,"no distance for this neighbour");
-    if(currentNeighbDistance <= min){
+    console.assert(currentNeighbDistance, "no distance for this neighbour");
+    if (currentNeighbDistance <= min) {
       min = currentNeighbDistance;
       minIndex = currentNeighb;
     }
@@ -359,10 +382,10 @@ function getClosestToStart(neighbours,distanceFromStartList){
  * @param {number[]} distanceFromStart 
  * @param {Node[]} grid 
  */
-function getShortestDistanceUnvisited(unvisited,distanceFromStart,grid){
+function getShortestDistanceUnvisited(unvisited, distanceFromStart, grid) {
 
-  for(let i = 0;i < distanceFromStart.length; i++){
-    if(unvisited[distanceFromStart[i][0]]){
+  for (let i = 0; i < distanceFromStart.length; i++) {
+    if (unvisited[distanceFromStart[i][0]]) {
       return distanceFromStart[i][0];
     }
   }
@@ -374,14 +397,16 @@ function getShortestDistanceUnvisited(unvisited,distanceFromStart,grid){
  * @param {Node[]} grid 
  * @param {Node} node 
  */
-async function visitNeighbours(currentNodeIndex,grid,distanceFromStartList,canvasContext){
+async function visitNeighbours(currentNodeIndex, grid, distanceFromStartList, canvasContext) {
   const currentDistance = distanceFromStartList.find(node => node[0] === currentNodeIndex)[1];
-  grid[currentNodeIndex].neighbours.forEach( (ngr,i)=> {
+  grid[currentNodeIndex].neighbours.forEach((ngr, i) => {
     const costToNode = ngr[1];
     const neighbIndex = distanceFromStartList.findIndex(node => node[0] === ngr[0]);
-    if(currentDistance + costToNode < distanceFromStartList[neighbIndex][1]){
+    if (currentDistance + costToNode < distanceFromStartList[neighbIndex][1]) {
       distanceFromStartList[neighbIndex][1] = currentDistance + costToNode;
-        renderExplored(canvasContext,grid[ngr[0]].coords[0],grid[ngr[0]].coords[1],distanceFromStartList[neighbIndex][1]);
+      setTimeout(()=>{
+        renderExplored(canvasContext, grid[ngr[0]].coords[0], grid[ngr[0]].coords[1], distanceFromStartList[neighbIndex][1]);
+      },i * SPEED)
     }
   })
 }
@@ -394,10 +419,10 @@ function renderEntities(context, entities) {
   entities.forEach(ent => {
     ent.visited.forEach((node, i) => {
       context.fillStyle = "yellow";
-      renderNode(context, node[0],node[1]);
+      renderNode(context, node[0], node[1]);
     })
     context.fillStyle = "red";
-    renderNode(context, ent.destination[0],ent.destination[1])
+    renderNode(context, ent.destination[0], ent.destination[1])
   })
 }
 
@@ -423,7 +448,7 @@ function App() {
       console.log(grid);
       renderGraph(context, grid);
       renderEntities(context, entities);
-      dijkstraNavigation2(grid, visitor1,[0,0], context);
+      dijkstraNavigation2(grid, visitor1, [0, 0], context);
       //renderWorld(15, 15, { ...AGENT, position: [xPos, yPos] }, GOAL, context);
       //renderVisited(visited, context)
       //goTo(AGENT,GOAL,setXPos,setYPos,setVisitedPos)
