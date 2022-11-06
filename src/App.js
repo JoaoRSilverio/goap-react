@@ -33,6 +33,7 @@ import { useEffect, useState, useRef, u } from 'react';
 
 
  const SPEED = 2;
+ const PATH_SPEED = 4;
 
 
 class Entity {
@@ -306,7 +307,7 @@ async function dijkstraNavigation2(grid, visitor, startPos, canvasContext) {
       unvisitedList[unvisitedIndex] = false;
       setTimeout(()=>{
         renderVisited(canvasContext, grid[unvisitedIndex].coords[0], grid[unvisitedIndex].coords[1], distanceFromStart.find(d => d[0] === unvisitedIndex)[1]);
-        renderEntities(canvasContext,visitor);
+        renderEntities(canvasContext,[visitor]);
       },visits * SPEED)
       visits ++;
    
@@ -323,8 +324,6 @@ async function dijkstraNavigation2(grid, visitor, startPos, canvasContext) {
   let cursor = [...destNode];
   const path = new Array();
   while (cursor[1] !== 0) {
-    
-   
     let nextCursorPosition = getClosestToStart(grid[cursor[0]].neighbours, distanceFromStart);
     console.assert(nextCursorPosition, "no neighbours");
     cursor[0] = nextCursorPosition;
@@ -333,15 +332,16 @@ async function dijkstraNavigation2(grid, visitor, startPos, canvasContext) {
   }
 
   path.reverse();
-  setTimeout(()=>{
-  path.forEach( cursor => {
+  path.forEach( (cursor,i) => {
+    visits++;
     const xPos = grid[cursor[0]].coords[0];
     const yPos = grid[cursor[0]].coords[1];
+    setTimeout(()=>{
       renderPathNode(canvasContext, xPos, yPos)
+    },visits * SPEED +100)
    
   });
-  renderEntities(canvasContext,visitor);
-}, 7000);
+  renderEntities(canvasContext,[visitor]);
 
   console.log("finished running dijskra!");
   console.log("origin, destination", startPos, visitor.destination);
